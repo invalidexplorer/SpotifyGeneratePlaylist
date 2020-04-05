@@ -54,7 +54,7 @@ class CreatePlaylist:
 
             # use youtube_dl to collect the song name & artist name
             video = youtube_dl.YoutubeDL({}).extract_info(
-                youtube_url, download=False)
+             youtube_url, download=False)
             song_name = video["track"]
             artist = video["artist"]
 
@@ -95,6 +95,13 @@ class CreatePlaylist:
 
     def get_spotify_uri(self, song_name, artist):
         """Search For the Song"""
+        song_name = song_name.replace('album','')
+        song_name = song_name.replace('offical','')
+        song_name = song_name.replace('video','')
+        song_name = song_name.replace('lyrics','')
+        song_name = song_name.replace('version','')
+        song_name = song_name.replace('audio','')
+
         query = "https://api.spotify.com/v1/search?query=track%3A{}+artist%3A{}&type=track&offset=0&limit=20".format(
             song_name,
             artist
@@ -109,11 +116,14 @@ class CreatePlaylist:
         response_json = response.json()
         songs = response_json["tracks"]["items"]
 
+        if response_json["tracks"]["items"]:
+        # no albums found, so no tracks either
+            uri = songs[0]["uri"]
+
+            return uri
+
         # only use the first song
-        uri = songs[0]["uri"]
-
-        return uri
-
+        
     def add_song_to_playlist(self):
         """Add all liked songs into a new Spotify playlist"""
         # populate dictionary with our liked songs
@@ -122,6 +132,8 @@ class CreatePlaylist:
         # collect all of uri
         uris = [info["spotify_uri"]
                 for song, info in self.all_song_info.items()]
+
+        uris = [i for i in uris if i] 
 
         # create a new playlist
         playlist_id = self.create_playlist()
